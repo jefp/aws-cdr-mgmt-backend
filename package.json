@@ -1,0 +1,12 @@
+{
+  "name": "cdr-mgmt-back",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "serverless": "^1.67.3",
+    "serverless-iam-roles-per-function": "^1.0.4",
+    "serverless-python-requirements": "^4.3.0"
+  }
+}

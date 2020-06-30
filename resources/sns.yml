@@ -1,0 +1,54 @@
+Resources:
+  SNSRestorePost:
+    Type: AWS::SNS::Topic
+    Properties:
+      # Generate a name based on the stage
+      DisplayName: ${self:custom.stage}-crd-glacier-recover-post
+      TopicName: ${self:custom.stage}-crd-glacier-recover-post
+  SNSRestoreCompleted:
+    Type: AWS::SNS::Topic
+    Properties:
+      # Generate a name based on the stage
+      DisplayName: ${self:custom.stage}-crd-glacier-recover-completed
+      TopicName: ${self:custom.stage}-crd-glacier-recover-completed
+  SNSTopicPolicyPost:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SNSRestorePost
+      PolicyDocument:
+        Id: SNSTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          -
+            Sid: S3TriggerAccess
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sns:Publish
+            Resource:
+              - !Ref SNSRestorePost
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:s3:::${self:service}-${self:custom.stage}-cdr"
+  SNSTopicPolicyCompleted:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SNSRestoreCompleted
+      PolicyDocument:
+        Id: SNSTopicPolicy
+        Version: '2012-10-17'
+        Statement:
+          -
+            Sid: S3TriggerAccess
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: sns:Publish
+            Resource:
+              - !Ref SNSRestoreCompleted
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:s3:::${self:service}-${self:custom.stage}-cdr"
+         

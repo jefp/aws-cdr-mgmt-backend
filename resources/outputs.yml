@@ -1,0 +1,7 @@
+Outputs:  
+  RawBucketOutput:    
+    Description: S3 Raw
+    Value: !Ref RawBucket
+  S3BucketCdrs:
+    Description: S3 Cdr
+    Value: !Ref S3BucketCdrs
