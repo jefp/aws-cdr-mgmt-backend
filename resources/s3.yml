@@ -1,0 +1,59 @@
+Resources:
+  S3BucketRaw:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:service}-${self:custom.stage}-cdr-raw
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration: 
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+  IndexLambdaPermissionRawS3:
+    Type: AWS::Lambda::Permission
+    Properties:
+        FunctionName:
+          "Fn::GetAtt":
+            - IndexLambdaFunction
+            - Arn
+        Principal: "s3.amazonaws.com"
+        Action: "lambda:InvokeFunction"
+        SourceAccount:
+          Ref: AWS::AccountId
+        SourceArn: arn:aws:s3:::${self:service}-${self:custom.stage}-cdr-raw
+  CDRBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:service}-${self:custom.stage}-cdr
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      NotificationConfiguration:
+        TopicConfigurations:
+          - Event: s3:ObjectRestore:Post
+            Topic: 
+              Ref: SNSRestorePost
+          - Event: s3:ObjectRestore:Completed
+            Topic: 
+              Ref: SNSRestoreCompleted
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration: 
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: GlacierRule
+            Status: Enabled          
+            Transitions:
+              - StorageClass: GLACIER
+                TransitionInDays: 7
+          - Id: GlacierDeepArchiveRule
+            Status: Enabled          
+            Transitions:
+              - StorageClass: DEEP_ARCHIVE
+                TransitionInDays: 100

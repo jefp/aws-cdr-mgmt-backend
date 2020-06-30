@@ -1,0 +1,113 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: cdr-mgmt-backend # NOTE: update this with your service name
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  runtime: python3.7
+
+
+# you can overwrite defaults here
+#  stage: dev
+#  region: us-east-1
+
+# you can add statements to the Lambda function's IAM Role here
+#  iamRoleStatements:
+#    - Effect: "Allow"
+#      Action:
+#        - "s3:ListBucket"
+#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
+#    - Effect: "Allow"
+#      Action:
+#        - "s3:PutObject"
+#      Resource:
+#        Fn::Join:
+#          - ""
+#          - - "arn:aws:s3:::"
+#            - "Ref" : "ServerlessDeploymentBucket"
+#            - "/*"
+
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+
+# you can add packaging information here
+package:
+#  include:
+#    - include-me.py
+#    - include-me-dir/**
+  exclude:
+    - .requirements.zip
+    - cdr-faker/**
+#    - exclude-me-dir/**
+
+functions:
+  index:
+    environment:
+      CDR_BUCKET: ${self:service}-${self:custom.stage}-cdr
+      STATS_TABLE: ${self:custom.stage}-stats-table
+    handler: functions/index.handler
+    timeout: 360
+    events:
+      - s3: 
+          bucket: raw
+          event: s3:ObjectCreated:*
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:PutObjectAcl
+          - s3:PutObjectTagging
+        Resource: 
+          - arn:aws:s3:::${self:service}-${self:custom.stage}-cdr/*
+          - arn:aws:s3:::${self:service}-${self:custom.stage}-cdr
+      - Effect: Allow
+        Action:
+          - s3:GetObjectAcl
+          - s3:GetObject
+          - s3:DeleteObject
+        Resource: arn:aws:s3:::${self:service}-${self:custom.stage}-cdr-raw/*
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource:
+          - "Fn::GetAtt": [ StatsTable, Arn ]
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  stages:
+    - dev
+    - stg
+    - prd
+  tableThroughputs:
+    prd: 5
+    default: 1
+  tableThroughput: ${self:custom.tableThroughputs.${self:custom.stage}, self:custom.tableThroughputs.default}
+  pythonRequirements:
+    dockerizePip: true
+
+resources:
+  - ${file(resources/s3.yml)}
+  - ${file(resources/sns.yml)}
+  - ${file(resources/dynamodb.yml)}
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-python-requirements
+
+  
+  
